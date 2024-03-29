@@ -1,35 +1,36 @@
-import express from 'express'
-import * as dotenv from 'dotenv';
-import cors from 'cors'
-import connectionDB from '../backend/Database/Connection.js';
+import express from 'express';
+import dotenv from 'dotenv';
+import cors from 'cors';
+import connectDB from '../backend/Database/Connection.js';
 import mainRouter from '../backend/Routes/main.js';
-import pixateRouter from './Routes/pixate.js';
+import pixateRouter from '../backend/Routes/pixate.js';
 
-const PORT_NUMBER = process.env.PORT
 dotenv.config();
-const app = express()
 
-//adding middlewares
+const PORT_NUMBER = process.env.PORT;
+const app = express();
+
+// Adding middlewares
 app.use(cors());
-app.use(express.json({limit:'50mb'}));
-app.use('api/v1/main',mainRouter);
-app.use('api/v1/pixate',pixateRouter);
+app.use(express.json({ limit: '50mb' }));
 
-//routes 
+// Routes
+app.get('/', async (req, res) => {
+    res.status(200).json({ message: 'Hello from Pixate!' });
+});
 
-app.get('/',async(req,res)=>{
-    res.send("hello from pixate !")
-})
+app.use('/api/v1/main', mainRouter);
+app.use('/api/v1/pixate', pixateRouter);
 
+const startServer = async () => {
+    try {
+        await connectDB(process.env.MONGODB_URL);
+        app.listen(PORT_NUMBER, () => {
+            console.log(`Server is running on port number ${PORT_NUMBER}`);
+        });
+    } catch (error) {
+        console.log(error);
+    }
+};
 
-
-try{
-    connectionDB(process.env.MONGODB_URL);
-    app.listen(PORT_NUMBER,()=>{
-        console.log(`Server is running on port number ${PORT_NUMBER}`)
-    })
-}
-catch(error){
-    console.log(error);
-}
-
+startServer();
