@@ -1,36 +1,41 @@
 import express from 'express';
-import dotenv from 'dotenv';
 import cors from 'cors';
-import connectDB from '../backend/Database/Connection.js';
-import mainRouter from '../backend/Routes/main.js';
-import pixateRouter from '../backend/Routes/pixate.js';
+import dotenv from 'dotenv';
+import OpenAI from "openai";
 
 dotenv.config();
 
-const PORT_NUMBER = process.env.PORT;
+const PORT_NUMBER = process.env.PORT || 3000;
 const app = express();
 
-// Adding middlewares
+app.use(express.json());
 app.use(cors());
-app.use(express.json({ limit: '50mb' }));
 
-// Routes
-app.get('/', async (req, res) => {
-    res.status(200).json({ message: 'Hello from Pixate!' });
+// Initialize OpenAI with your API key
+const openai = new OpenAI(process.env.OPENAI_API_KEY);
+
+app.post('/images', async (req, res) => {
+    try {
+        const { prompt } = req.body;
+        
+        if (!prompt) {
+            return res.status(400).json({ error: 'Prompt is required' });
+        }
+
+        // Generate image using OpenAI API
+        const image = await openai.images.generate({ model: "dall-e-3", n: 1, prompt: prompt, size: "1024x1024" });
+        
+        return res.json(image.data);
+    } catch (error) {
+        console.error('Error:', error);
+        return res.status(500).json({ error: 'Internal Server Error' });
+    }
 });
 
-app.use('/api/v1/main', mainRouter);
-app.use('/api/v1/pixate', pixateRouter);
-
-const startServer = async () => {
-    try {
-        await connectDB(process.env.MONGODB_URL);
-        app.listen(PORT_NUMBER, () => {
-            console.log(`Server is running on port number ${PORT_NUMBER}`);
-        });
-    } catch (error) {
-        console.log(error);
-    }
+const startServer = () => {
+    app.listen(PORT_NUMBER, () => {
+        console.log(`Server is running on port number ${PORT_NUMBER}`);
+    });
 };
 
 startServer();
